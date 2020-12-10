@@ -6,25 +6,31 @@
 // @author       You
 // @match        https://my.whisk.com/shopping-list/*
 // @match        https://www.ishopnewworld.co.nz/Search?q=*
-// @grant    GM.getValue
-// @grant    GM.setValue
+// @grant    GM_getValue
+// @grant    GM_setValue
+// @grant    GM_addStyle
 // ==/UserScript==
 
 var site = document.location.host;
-if (site === "www.ishopnewworld.co.nz") {
-    var nwList = GM.getValue('list');
-    console.log(nwList);
+if (site === "www.ishopnewworld.co.nz" || site === "https://shop.countdown.co.nz/") {
+    var spList = GM_getValue('list');
+    console.log(spList);
 } else {
     (function() {
         window.addEventListener("load", () => {
-            // get list
-            let list = Array.from(document.querySelectorAll('[data-testid="shopping-list-item-name"]')).map(e => e.innerHTML).join('\n');
-            console.log(list);
+            
+            // Fake GM
+            // let GM = 
+            //         {
+            //             setValue: function(par1, par2) {
+            //                 console.log(`GM variable ${par1} is now set to ${par2}`);
+            //             }
+            //         };
+            
 
             // listener functions
             function copyToClipboard(str) {
-                console.log('ctc');
-                console.log(list);
+                let list = setList();
                 const el = document.createElement('textarea');
                 el.innerHTML = list;
                 el.setAttribute('readonly', '');
@@ -37,17 +43,10 @@ if (site === "www.ishopnewworld.co.nz") {
             };
 
             function openInTabs() {
+                let list = setList();
                 var listArray = list.split('\n');
-                var prefix = "https://www.ishopnewworld.co.nz/Search?q=";
+                var prefix = superDeets().prefix;
                 var urlArray = listArray.map(e => prefix + e.replace(/\s/g, "%20"));
-
-                // if (nwRadio.checked) {
-                //     console.log("new world baby");
-                //     prefix = "https://www.ishopnewworld.co.nz/Search?q=";
-                // } else if (cdRadio.checked) {
-                //     console.log("countdown biatch!");
-                //     prefix = "https://shop.countdown.co.nz/shop/searchproducts?search=";
-                // }
 
                 urlArray.forEach((url) => {
                     window.open(url, "_blank");
@@ -55,7 +54,7 @@ if (site === "www.ishopnewworld.co.nz") {
             }
 
             function login(supermarket) {
-                window.open('https://www.ishopnewworld.co.nz/', '_blank');
+                window.open(superDeets().login, '_blank');
             }
 
             // helper functions
@@ -83,24 +82,56 @@ if (site === "www.ishopnewworld.co.nz") {
             }
 
             function insertAtTop (newNode) {
-                let parentNode = document.querySelector('#app > div.sc-1m5eneg.bxumRo');
-                let refNode = document.querySelector('#app > div.sc-1m5eneg.bxumRo > div.sc-1qjhcgc.ikMhkq.sc-1te27dw.eXwaQM');
+                let parentNode = document.querySelector('.one');
+                let refNode = document.querySelector('.two');
+                // let parentNode = document.querySelector('#app > div.sc-1m5eneg.bxumRo');
+                // let refNode = document.querySelector('#app > div.sc-1m5eneg.bxumRo > div.sc-1qjhcgc.ikMhkq.sc-1te27dw.eXwaQM');
                 parentNode.insertBefore(newNode, refNode);
             }
+
+            function setList() {
+                let list = Array.from(document.querySelectorAll('[data-testid="shopping-list-item-name"]')).map(e => e.innerHTML).join('\n');
+                GM_setValue("list", list);
+                console.log(list);
+                return list;
+            }
+
+            function superDeets() {
+                var cdRadio = document.getElementById("cd");
+                var nwRadio = document.getElementById("nw");
+                let sp = {}
+                if (nwRadio.checked) {
+                    console.log("new world baby");
+                    sp.prefix = "https://www.ishopnewworld.co.nz/Search?q=";
+                    sp.login = "https://www.ishopnewworld.co.nz/";
+                } else if (cdRadio.checked) {
+                    console.log("countdown biatch!");
+                    sp.prefix = "https://shop.countdown.co.nz/shop/searchproducts?search=";
+                    sp.login = "https://shop.countdown.co.nz/shop/securelogin";
+                }
+                return sp;
+            }
+
             // setup buttons
             let buttonDiv = document.createElement('div');
+            buttonDiv.classList.add('buttonDiv');
+            buttonDiv.innerHTML = `<form id="radio-div">
+            <img class="logo" src="https://i.imgur.com/9Gy77Qs.jpg" alt="New World" height ='30px'>
+            <input type="radio" name="super" id="nw" value="New World" checked>
+            <img class="logo" src="https://i.imgur.com/sGVNVne.jpg" alt="Countdown" height ='30px'>
+            <input type="radio" name="super" id="cd" value="Countdown">
+            </form>`;
+            GM_addStyle('input[type="radio"] { margin-top: -1px; vertical-align: middle; }');
+            GM_addStyle('.buttonDiv { display: flex; justify-content: center; align-items: center; margin-bottom: -25px; }');
             buttonDiv.style.display = 'flex';
             buttonDiv.style["justify-content"] = 'center';
+            buttonDiv.style["align-items"] = 'center';
             buttonDiv.style["margin-bottom"] = '-25px';
             insertAtTop(buttonDiv);
             addButton("Login", login);
             addButton("Copy to Clipboard", copyToClipboard);
             addButton("Open in Tabs", openInTabs);
 
-            GM.setValue("list", list);
         });
     })();
 }
-
-
-
